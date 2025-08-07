@@ -341,19 +341,21 @@ export default function Tasks() {
 
       {/* Task Details Drawer */}
       <Drawer open={!!selectedTask} onOpenChange={(open) => !open && setSelectedTask(null)}>
-        <DrawerContent className="max-h-[90vh]">
-          <DrawerHeader>
+        <DrawerContent className="max-h-[95vh] h-[95vh]">
+          <DrawerHeader className="flex-shrink-0">
             <DrawerTitle>Détails de la tâche</DrawerTitle>
           </DrawerHeader>
-          {selectedTask && (
-            <TaskDetails 
-              task={selectedTask} 
-              onTaskUpdate={() => {
-                fetchTasks();
-                setSelectedTask(null);
-              }}
-            />
-          )}
+          <div className="flex-1 overflow-y-auto">
+            {selectedTask && (
+              <TaskDetails 
+                task={selectedTask} 
+                onTaskUpdate={() => {
+                  fetchTasks();
+                  setSelectedTask(null);
+                }}
+              />
+            )}
+          </div>
         </DrawerContent>
       </Drawer>
     </div>

@@ -319,7 +319,7 @@ export function TaskDetails({ task, onTaskUpdate }: TaskDetailsProps) {
   console.log('TaskDetails rendering with data:', { subtasks, messages, users });
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="px-6 pb-6 space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="space-y-2">
