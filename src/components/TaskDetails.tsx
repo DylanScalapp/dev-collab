@@ -71,12 +71,14 @@ export function TaskDetails({ task, onTaskUpdate }: TaskDetailsProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('TaskDetails mounting for task:', task.id);
     fetchSubtasks();
     fetchMessages();
     fetchUsers();
   }, [task.id]);
 
   const fetchSubtasks = async () => {
+    console.log('Fetching subtasks for task:', task.id);
     try {
       const { data, error } = await supabase
         .from('subtasks')
@@ -84,7 +86,11 @@ export function TaskDetails({ task, onTaskUpdate }: TaskDetailsProps) {
         .eq('task_id', task.id)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Subtasks fetch error:', error);
+        throw error;
+      }
+      console.log('Subtasks fetched:', data);
       setSubtasks(data || []);
     } catch (error) {
       console.error('Error fetching subtasks:', error);
@@ -92,6 +98,7 @@ export function TaskDetails({ task, onTaskUpdate }: TaskDetailsProps) {
   };
 
   const fetchMessages = async () => {
+    console.log('Fetching messages for task:', task.id);
     try {
       const { data: messagesData, error } = await supabase
         .from('messages')
@@ -99,22 +106,38 @@ export function TaskDetails({ task, onTaskUpdate }: TaskDetailsProps) {
         .eq('task_id', task.id)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Messages fetch error:', error);
+        throw error;
+      }
+      console.log('Messages fetched:', messagesData);
 
       // Get profiles separately for each sender
+      const senderIds = messagesData?.map(m => m.sender_id) || [];
+      console.log('Fetching profiles for senders:', senderIds);
+      
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('user_id, first_name, last_name, email')
-        .in('user_id', messagesData?.map(m => m.sender_id) || []);
+        .in('user_id', senderIds);
 
-      if (profilesError) throw profilesError;
+      if (profilesError) {
+        console.error('Profiles fetch error:', profilesError);
+        throw profilesError;
+      }
+      console.log('Profiles fetched:', profilesData);
 
       // Combine messages with profile data
       const messagesWithProfiles = messagesData?.map(message => ({
         ...message,
-        profiles: profilesData?.find(p => p.user_id === message.sender_id)
+        profiles: profilesData?.find(p => p.user_id === message.sender_id) || {
+          first_name: 'Utilisateur',
+          last_name: 'Inconnu',
+          email: 'inconnu@email.com'
+        }
       })) || [];
 
+      console.log('Combined messages with profiles:', messagesWithProfiles);
       setMessages(messagesWithProfiles);
     } catch (error) {
       console.error('Error fetching messages:', error);
@@ -122,13 +145,18 @@ export function TaskDetails({ task, onTaskUpdate }: TaskDetailsProps) {
   };
 
   const fetchUsers = async () => {
+    console.log('Fetching users...');
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('user_id, first_name, last_name, email')
         .eq('is_approved', true);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Users fetch error:', error);
+        throw error;
+      }
+      console.log('Users fetched:', data);
       
       const formattedUsers = (data || []).map(profile => ({
         id: profile.user_id,
@@ -137,10 +165,12 @@ export function TaskDetails({ task, onTaskUpdate }: TaskDetailsProps) {
         email: profile.email,
       }));
       
+      console.log('Formatted users:', formattedUsers);
       setUsers(formattedUsers);
     } catch (error) {
       console.error('Error fetching users:', error);
     } finally {
+      console.log('Setting loading to false');
       setLoading(false);
     }
   };
@@ -282,8 +312,11 @@ export function TaskDetails({ task, onTaskUpdate }: TaskDetailsProps) {
   const completedSubtasks = subtasks.filter(s => s.is_completed).length;
 
   if (loading) {
+    console.log('TaskDetails is still loading...');
     return <div className="p-6">Chargement...</div>;
   }
+
+  console.log('TaskDetails rendering with data:', { subtasks, messages, users });
 
   return (
     <div className="p-6 space-y-6">
