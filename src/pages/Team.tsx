@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CheckCircle, XCircle, Search, UserPlus, Edit } from 'lucide-react';
+import { CheckCircle, XCircle, Search, UserPlus, Edit, Trash2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface TeamMember {
@@ -70,6 +70,32 @@ export default function Team() {
       toast({
         title: "Erreur",
         description: "Impossible de mettre à jour l'approbation.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    try {
+      // Supprimer le profil (cascade supprimera aussi l'utilisateur auth)
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      setMembers(prev => prev.filter(member => member.user_id !== userId));
+
+      toast({
+        title: "Utilisateur supprimé",
+        description: "L'utilisateur a été supprimé définitivement.",
+      });
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer l'utilisateur.",
         variant: "destructive"
       });
     }
@@ -197,10 +223,10 @@ export default function Team() {
                     </Button>
                     <Button
                       size="sm"
-                      variant="outline"
-                      onClick={() => handleApproval(member.user_id, false)}
+                      variant="destructive"
+                      onClick={() => handleDeleteUser(member.user_id)}
                     >
-                      <XCircle className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </CardContent>
