@@ -102,16 +102,30 @@ function TaskCard({ task, onTaskClick }: { task: Task; onTaskClick: (task: Task)
 }
 
 function StatusColumn({ status, tasks, title, onTaskClick }: { 
-  status: string; 
-  tasks: Task[]; 
-  title: string;
-  onTaskClick: (task: Task) => void;
-}) {
+    status: string; 
+    tasks: Task[]; 
+    title: string;
+    onTaskClick: (task: Task) => void;
+  }) {
+  // Couleurs de fond par statut
+  const bgColors: Record<string, string> = {
+    todo: "bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200",
+    in_progress: "bg-gradient-to-br from-blue-50 via-blue-100 to-blue-200",
+    review: "bg-gradient-to-br from-yellow-50 via-yellow-100 to-yellow-200",
+    to_modify: "bg-gradient-to-br from-orange-50 via-orange-100 to-orange-200",
+    completed: "bg-gradient-to-br from-green-50 via-green-100 to-green-200",
+    cancelled: "bg-gradient-to-br from-red-50 via-red-100 to-red-200"
+  };
+
   return (
     <div className="flex-1 min-w-80">
-      <div className="bg-muted/50 rounded-lg p-4">
+      <div className={cn(
+        "rounded-xl p-4 shadow-md flex flex-col",
+        bgColors[status],
+        "h-[80vh] max-h-[80vh] overflow-y-auto"
+      )}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-sm">{title}</h2>
+          <h2 className="font-semibold text-base">{title}</h2>
           <Badge variant="secondary">{tasks.length}</Badge>
         </div>
         <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
