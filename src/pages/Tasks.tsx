@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Search, Filter } from 'lucide-react';
+import { TaskForm } from '@/components/forms/TaskForm';
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useSortable } from '@dnd-kit/sortable';
@@ -118,6 +119,7 @@ export default function Tasks() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [loading, setLoading] = useState(true);
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -230,21 +232,24 @@ export default function Tasks() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Mes tâches</h1>
           {isAdmin && (
-            <Dialog>
+            <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
                   Nouvelle tâche
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Créer une nouvelle tâche</DialogTitle>
                 </DialogHeader>
-                {/* Task creation form would go here */}
-                <p className="text-muted-foreground">
-                  Formulaire de création de tâche à implémenter
-                </p>
+                <TaskForm
+                  onSubmit={() => {
+                    setIsTaskDialogOpen(false);
+                    fetchTasks();
+                  }}
+                  onCancel={() => setIsTaskDialogOpen(false)}
+                />
               </DialogContent>
             </Dialog>
           )}

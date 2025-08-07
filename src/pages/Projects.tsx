@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Plus, Search, FolderOpen, Users, Calendar, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { ProjectForm } from '@/components/forms/ProjectForm';
 
 interface Project {
   id: string;
@@ -35,6 +36,7 @@ export default function Projects() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchProjects();
@@ -132,20 +134,24 @@ export default function Projects() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Projets</h1>
           {isAdmin && (
-            <Dialog>
+            <Dialog open={isProjectDialogOpen} onOpenChange={setIsProjectDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
                   Nouveau projet
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Créer un nouveau projet</DialogTitle>
                 </DialogHeader>
-                <p className="text-muted-foreground">
-                  Formulaire de création de projet à implémenter
-                </p>
+                <ProjectForm
+                  onSubmit={() => {
+                    setIsProjectDialogOpen(false);
+                    fetchProjects();
+                  }}
+                  onCancel={() => setIsProjectDialogOpen(false)}
+                />
               </DialogContent>
             </Dialog>
           )}
@@ -267,20 +273,24 @@ export default function Projects() {
             {searchTerm ? 'Essayez de modifier votre recherche.' : 'Aucun projet disponible pour le moment.'}
           </p>
           {isAdmin && !searchTerm && (
-            <Dialog>
+            <Dialog open={isProjectDialogOpen} onOpenChange={setIsProjectDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="mt-4">
                   <Plus className="h-4 w-4 mr-2" />
                   Créer le premier projet
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Créer un nouveau projet</DialogTitle>
                 </DialogHeader>
-                <p className="text-muted-foreground">
-                  Formulaire de création de projet à implémenter
-                </p>
+                <ProjectForm
+                  onSubmit={() => {
+                    setIsProjectDialogOpen(false);
+                    fetchProjects();
+                  }}
+                  onCancel={() => setIsProjectDialogOpen(false)}
+                />
               </DialogContent>
             </Dialog>
           )}
