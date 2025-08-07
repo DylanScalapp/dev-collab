@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CheckCircle, XCircle, Search, UserPlus, Edit, Trash2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { log } from 'console';
 
 interface TeamMember {
   id: string;
@@ -140,6 +141,8 @@ export default function Team() {
   const approvedMembers = filteredMembers.filter(m => m.is_approved);
   const pendingMembers = filteredMembers.filter(m => !m.is_approved);
 
+  
+
   if (loading) {
     return (
       <div className="px-4 sm:px-6 lg:px-8">
@@ -188,7 +191,7 @@ export default function Team() {
       </div>
 
       {/* Pending approvals for admins */}
-      {isAdmin && pendingMembers.length > 0 && (
+      {isAdmin && approvedMembers.length > 0 && (
         <div className="mb-8">
           <h2 className="text-lg font-semibold mb-4 text-orange-600">
             En attente d'approbation ({pendingMembers.length})
@@ -313,6 +316,9 @@ export default function Team() {
           ))}
         </div>
       </div>
+      
+      
+
 
       {/* Empty state */}
       {filteredMembers.length === 0 && (
