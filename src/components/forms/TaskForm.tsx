@@ -64,7 +64,7 @@ export function TaskForm({ onSubmit, onCancel }: TaskFormProps) {
       description: '',
       priority: 'medium',
       project_id: '',
-      assigned_to: '',
+      assigned_to: undefined,
     },
   });
 
@@ -257,11 +257,10 @@ export function TaskForm({ onSubmit, onCancel }: TaskFormProps) {
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un utilisateur" />
+                    <SelectValue placeholder="Sélectionner un utilisateur (optionnel)" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="">Non assigné</SelectItem>
                   {users.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.first_name} {user.last_name} ({user.email})
