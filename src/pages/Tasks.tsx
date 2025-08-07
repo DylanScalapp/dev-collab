@@ -11,11 +11,12 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from 
 import { Plus, Search, Filter } from 'lucide-react';
 import { TaskForm } from '@/components/forms/TaskForm';
 import { TaskDetails } from '@/components/TaskDetails';
-import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, closestCenter, useDroppable, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
+import { log } from 'console';
 
 interface Task {
   id: string;
@@ -184,11 +185,12 @@ export default function Tasks() {
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
+    
+    
     if (!over) return;
-
+    
     const taskId = active.id as string;
     const newStatus = over.id as Task['status'];
-
     // Update optimistically
     setTasks(prev => prev.map(task => 
       task.id === taskId ? { ...task, status: newStatus } : task
@@ -199,7 +201,7 @@ export default function Tasks() {
         .from('tasks')
         .update({ status: newStatus })
         .eq('id', taskId);
-
+        fetchTasks();
       if (error) {
         // Revert on error
         fetchTasks();
@@ -298,50 +300,30 @@ export default function Tasks() {
       </div>
 
       {/* Kanban Board */}
-      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <div className="flex gap-6 overflow-x-auto pb-6">
-          <StatusColumn
-            status="todo"
-            tasks={tasksByStatus.todo}
-            title="À faire"
-            onTaskClick={setSelectedTask}
-          />
-          <StatusColumn
-            status="in_progress"
-            tasks={tasksByStatus.in_progress}
-            title="En cours"
-            onTaskClick={setSelectedTask}
-          />
-          <StatusColumn
-            status="review"
-            tasks={tasksByStatus.review}
-            title="À revoir"
-            onTaskClick={setSelectedTask}
-          />
-          <StatusColumn
-            status="to_modify"
-            tasks={tasksByStatus.to_modify}
-            title="À modifier"
-            onTaskClick={setSelectedTask}
-          />
-          <StatusColumn
-            status="completed"
-            tasks={tasksByStatus.completed}
-            title="Terminé"
-            onTaskClick={setSelectedTask}
-          />
-          <StatusColumn
-            status="cancelled"
-            tasks={tasksByStatus.cancelled}
-            title="Annulé"
-            onTaskClick={setSelectedTask}
-          />
+          {Object.entries(tasksByStatus).map(([status, tasks]) => (
+            <DroppableColumn key={status} id={status}>
+              <SortableContext
+                items={tasks.map(task => task.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <StatusColumn
+                  status={status}
+                  tasks={tasks}
+                  title={getStatusTitle(status)}
+                  onTaskClick={setSelectedTask}
+                />
+              </SortableContext>
+            </DroppableColumn>
+          ))}
         </div>
       </DndContext>
+      
 
       {/* Task Details Drawer */}
       <Drawer open={!!selectedTask} onOpenChange={(open) => !open && setSelectedTask(null)}>
-        <DrawerContent className="max-h-[95vh] h-[95vh]">
+        <DrawerContent className="max-h-[97vh] h-[97vh]">
           <DrawerHeader className="flex-shrink-0">
             <DrawerTitle>Détails de la tâche</DrawerTitle>
           </DrawerHeader>
@@ -360,4 +342,27 @@ export default function Tasks() {
       </Drawer>
     </div>
   );
+
+  // Helper pour le titre
+  function getStatusTitle(status: string) {
+    switch (status) {
+      case "todo": return "À faire";
+      case "in_progress": return "En cours";
+      case "review": return "À revoir";
+      case "to_modify": return "À modifier";
+      case "completed": return "Terminé";
+      case "cancelled": return "Annulé";
+      default: return status;
+    }
+  }
+
+  function DroppableColumn({ id, children }: { id: string; children: React.ReactNode }) {
+    const { setNodeRef } = useDroppable({ id });
+    return (
+      <div ref={setNodeRef} className="flex-1 min-w-80">
+        {children}
+      </div>
+    );
+  }
+
 }
