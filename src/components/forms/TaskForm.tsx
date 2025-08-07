@@ -39,7 +39,19 @@ interface User {
   email: string;
 }
 
+interface Task {
+  id: string;
+  title: string;
+  description: string;
+  status: 'todo' | 'in_progress' | 'review' | 'to_modify' | 'completed' | 'cancelled';
+  priority: string;
+  project_id: string;
+  assigned_to: string;
+  due_date: string;
+}
+
 interface TaskFormProps {
+  task?: Task;
   onSubmit: () => void;
   onCancel: () => void;
 }
@@ -51,7 +63,7 @@ const priorityOptions = [
   { value: 'urgent', label: 'Urgente', color: 'text-red-600' },
 ];
 
-export function TaskForm({ onSubmit, onCancel }: TaskFormProps) {
+export function TaskForm({ task, onSubmit, onCancel }: TaskFormProps) {
   const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -59,7 +71,14 @@ export function TaskForm({ onSubmit, onCancel }: TaskFormProps) {
 
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskSchema),
-    defaultValues: {
+    defaultValues: task ? {
+      title: task.title,
+      description: task.description,
+      priority: task.priority as 'low' | 'medium' | 'high' | 'urgent',
+      project_id: task.project_id,
+      assigned_to: task.assigned_to || undefined,
+      due_date: task.due_date ? new Date(task.due_date) : undefined,
+    } : {
       title: '',
       description: '',
       priority: 'medium',
@@ -126,34 +145,57 @@ export function TaskForm({ onSubmit, onCancel }: TaskFormProps) {
 
     setLoading(true);
     try {
-      const taskData = {
-        title: data.title,
-        description: data.description || null,
-        priority: data.priority,
-        project_id: data.project_id,
-        assigned_to: data.assigned_to || null,
-        due_date: data.due_date?.toISOString() || null,
-        created_by: user.id,
-        status: 'todo' as const,
-      };
+      if (task) {
+        // Update existing task
+        const { error } = await supabase
+          .from('tasks')
+          .update({
+            title: data.title,
+            description: data.description || null,
+            priority: data.priority,
+            project_id: data.project_id,
+            assigned_to: data.assigned_to || null,
+            due_date: data.due_date?.toISOString() || null,
+          })
+          .eq('id', task.id);
 
-      const { error } = await supabase
-        .from('tasks')
-        .insert([taskData]);
+        if (error) throw error;
 
-      if (error) throw error;
+        toast({
+          title: 'Succès',
+          description: 'La tâche a été mise à jour avec succès',
+        });
+      } else {
+        // Create new task
+        const taskData = {
+          title: data.title,
+          description: data.description || null,
+          priority: data.priority,
+          project_id: data.project_id,
+          assigned_to: data.assigned_to || null,
+          due_date: data.due_date?.toISOString() || null,
+          created_by: user.id,
+          status: 'todo' as const,
+        };
 
-      toast({
-        title: 'Succès',
-        description: 'La tâche a été créée avec succès',
-      });
+        const { error } = await supabase
+          .from('tasks')
+          .insert([taskData]);
+
+        if (error) throw error;
+
+        toast({
+          title: 'Succès',
+          description: 'La tâche a été créée avec succès',
+        });
+      }
 
       onSubmit();
     } catch (error) {
-      console.error('Error creating task:', error);
+      console.error('Error saving task:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible de créer la tâche',
+        description: `Impossible de ${task ? 'modifier' : 'créer'} la tâche`,
         variant: 'destructive',
       });
     } finally {
@@ -323,6 +365,8 @@ export function TaskForm({ onSubmit, onCancel }: TaskFormProps) {
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Création...
               </>
+            ) : task ? (
+              'Modifier la tâche'
             ) : (
               'Créer la tâche'
             )}

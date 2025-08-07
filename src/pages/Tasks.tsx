@@ -7,8 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from '@/components/ui/drawer';
 import { Plus, Search, Filter } from 'lucide-react';
 import { TaskForm } from '@/components/forms/TaskForm';
+import { TaskDetails } from '@/components/TaskDetails';
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useSortable } from '@dnd-kit/sortable';
@@ -43,7 +45,7 @@ const statusConfig = {
   cancelled: { label: 'Annulé', color: 'bg-red-100 text-red-800' }
 };
 
-function TaskCard({ task }: { task: Task }) {
+function TaskCard({ task, onTaskClick }: { task: Task; onTaskClick: (task: Task) => void }) {
   const {
     attributes,
     listeners,
@@ -65,9 +67,15 @@ function TaskCard({ task }: { task: Task }) {
       {...attributes}
       {...listeners}
       className={cn(
-        "p-4 bg-card rounded-lg border cursor-grab active:cursor-grabbing",
+        "p-4 bg-card rounded-lg border cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow",
         isDragging && "opacity-50"
       )}
+      onClick={(e) => {
+        // Only trigger task details if not dragging
+        if (!isDragging && e.detail === 1) {
+          onTaskClick(task);
+        }
+      }}
     >
       <div className="space-y-2">
         <div className="flex items-start justify-between">
@@ -92,7 +100,12 @@ function TaskCard({ task }: { task: Task }) {
   );
 }
 
-function StatusColumn({ status, tasks, title }: { status: string; tasks: Task[]; title: string }) {
+function StatusColumn({ status, tasks, title, onTaskClick }: { 
+  status: string; 
+  tasks: Task[]; 
+  title: string;
+  onTaskClick: (task: Task) => void;
+}) {
   return (
     <div className="flex-1 min-w-80">
       <div className="bg-muted/50 rounded-lg p-4">
@@ -103,7 +116,7 @@ function StatusColumn({ status, tasks, title }: { status: string; tasks: Task[];
         <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
           <div className="space-y-3">
             {tasks.map(task => (
-              <TaskCard key={task.id} task={task} />
+              <TaskCard key={task.id} task={task} onTaskClick={onTaskClick} />
             ))}
           </div>
         </SortableContext>
@@ -120,6 +133,7 @@ export default function Tasks() {
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -290,34 +304,58 @@ export default function Tasks() {
             status="todo"
             tasks={tasksByStatus.todo}
             title="À faire"
+            onTaskClick={setSelectedTask}
           />
           <StatusColumn
             status="in_progress"
             tasks={tasksByStatus.in_progress}
             title="En cours"
+            onTaskClick={setSelectedTask}
           />
           <StatusColumn
             status="review"
             tasks={tasksByStatus.review}
             title="À revoir"
+            onTaskClick={setSelectedTask}
           />
           <StatusColumn
             status="to_modify"
             tasks={tasksByStatus.to_modify}
             title="À modifier"
+            onTaskClick={setSelectedTask}
           />
           <StatusColumn
             status="completed"
             tasks={tasksByStatus.completed}
             title="Terminé"
+            onTaskClick={setSelectedTask}
           />
           <StatusColumn
             status="cancelled"
             tasks={tasksByStatus.cancelled}
             title="Annulé"
+            onTaskClick={setSelectedTask}
           />
         </div>
       </DndContext>
+
+      {/* Task Details Drawer */}
+      <Drawer open={!!selectedTask} onOpenChange={(open) => !open && setSelectedTask(null)}>
+        <DrawerContent className="max-h-[90vh]">
+          <DrawerHeader>
+            <DrawerTitle>Détails de la tâche</DrawerTitle>
+          </DrawerHeader>
+          {selectedTask && (
+            <TaskDetails 
+              task={selectedTask} 
+              onTaskUpdate={() => {
+                fetchTasks();
+                setSelectedTask(null);
+              }}
+            />
+          )}
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }
