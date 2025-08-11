@@ -102,11 +102,11 @@ function TaskCard({ task, onTaskClick }: { task: Task; onTaskClick: (task: Task)
 }
 
 function StatusColumn({ status, tasks, title, onTaskClick }: { 
-    status: string; 
-    tasks: Task[]; 
-    title: string;
-    onTaskClick: (task: Task) => void;
-  }) {
+  status: string; 
+  tasks: Task[]; 
+  title: string;
+  onTaskClick: (task: Task) => void;
+}) {
   // Couleurs de fond par statut
   const bgColors: Record<string, string> = {
     todo: "bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200",
@@ -198,8 +198,6 @@ export default function Tasks() {
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
-
-    
     
     if (!over) return;
     
@@ -215,7 +213,6 @@ export default function Tasks() {
         .from('tasks')
         .update({ status: newStatus })
         .eq('id', taskId);
-        fetchTasks();
       if (error) {
         // Revert on error
         fetchTasks();
@@ -337,12 +334,19 @@ export default function Tasks() {
 
       {/* Task Details Drawer */}
       <Drawer open={!!selectedTask} onOpenChange={(open) => !open && setSelectedTask(null)}>
-        <DrawerContent className="max-h-[97vh] h-[97vh]">
-          <DrawerHeader className="flex-shrink-0">
-            <DrawerTitle>Détails de la tâche</DrawerTitle>
+        <DrawerContent className="max-h-[97vh] h-[97vh] bg-gradient-to-br from-gray-50 via-white to-gray-100 shadow-xl border-l">
+          <DrawerHeader className="flex-shrink-0 border-b pb-4 mb-2 bg-white/80 backdrop-blur">
+            <DrawerTitle className="text-xl font-bold text-blue-700 flex items-center gap-2">
+              <span>Détails de la tâche</span>
+              {selectedTask && (
+                <Badge className={statusConfig[selectedTask.status].color}>
+                  {statusConfig[selectedTask.status].label}
+                </Badge>
+              )}
+            </DrawerTitle>
           </DrawerHeader>
-          <div className="flex-1 overflow-y-auto">
-            {selectedTask && (
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            {selectedTask ? (
               <TaskDetails 
                 task={selectedTask} 
                 onTaskUpdate={() => {
@@ -350,6 +354,10 @@ export default function Tasks() {
                   setSelectedTask(null);
                 }}
               />
+            ) : (
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                <span>Aucune tâche sélectionnée</span>
+              </div>
             )}
           </div>
         </DrawerContent>
