@@ -43,11 +43,23 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">ProManagement</CardTitle>
-          <CardDescription>
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
+      <div className="absolute top-0 left-0 w-72 h-72 bg-primary/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-accent/10 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
+      
+      <Card className="w-full max-w-md glass shadow-elegant hover:shadow-elegant-hover transition-all duration-300 animate-slide-up relative z-10">
+        <CardHeader className="text-center space-y-4 pb-8">
+          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center shadow-lg">
+            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+              <div className="w-4 h-4 bg-gradient-to-br from-primary to-accent rounded-sm" />
+            </div>
+          </div>
+          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            ProManagement
+          </CardTitle>
+          <CardDescription className="text-base">
             Connectez-vous à votre espace de gestion de projets
           </CardDescription>
         </CardHeader>
@@ -79,7 +91,7 @@ export default function Auth() {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button type="submit" variant="gradient" size="lg" className="w-full" disabled={isLoading}>
                   {isLoading ? "Connexion..." : "Se connecter"}
                 </Button>
               </form>
@@ -126,7 +138,7 @@ export default function Auth() {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button type="submit" variant="gradient" size="lg" className="w-full" disabled={isLoading}>
                   {isLoading ? "Inscription..." : "S'inscrire"}
                 </Button>
                 <p className="text-sm text-muted-foreground text-center">

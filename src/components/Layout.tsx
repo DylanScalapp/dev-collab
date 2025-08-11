@@ -33,15 +33,20 @@ export default function Layout() {
         "fixed inset-0 z-50 lg:hidden",
         sidebarOpen ? "block" : "hidden"
       )}>
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
-        <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-sidebar-background">
-          <div className="flex h-16 items-center justify-between px-4">
-            <h1 className="text-xl font-bold text-sidebar-foreground">ProManagement</h1>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-sidebar-background glass">
+          <div className="flex h-16 items-center justify-between px-6">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
+                <div className="w-4 h-4 bg-white rounded-sm" />
+              </div>
+              <h1 className="text-xl font-bold text-sidebar-foreground">ProManagement</h1>
+            </div>
             <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(false)}>
               <X className="h-4 w-4" />
             </Button>
           </div>
-          <nav className="flex-1 space-y-1 px-2 py-4">
+          <nav className="flex-1 space-y-2 px-4 py-6">
             {navigation.map((item) => {
               const isActive = location.pathname === item.href;
               return (
@@ -49,10 +54,10 @@ export default function Layout() {
                   key={item.name}
                   to={item.href}
                   className={cn(
-                    "group flex items-center px-2 py-2 text-sm font-medium rounded-md",
+                    "group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200",
                     isActive
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                      ? "bg-gradient-to-r from-primary/15 to-accent/15 text-primary border border-primary/20 shadow-md"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-sm hover:-translate-y-0.5"
                   )}
                   onClick={() => setSidebarOpen(false)}
                 >
@@ -67,11 +72,16 @@ export default function Layout() {
 
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
-        <div className="flex min-h-0 flex-1 flex-col bg-sidebar-background border-r border-sidebar-border">
-          <div className="flex h-16 items-center px-4">
-            <h1 className="text-xl font-bold text-sidebar-foreground">ProManagement</h1>
+        <div className="flex min-h-0 flex-1 flex-col bg-sidebar-background border-r border-sidebar-border glass">
+          <div className="flex h-16 items-center px-6">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
+                <div className="w-4 h-4 bg-white rounded-sm" />
+              </div>
+              <h1 className="text-xl font-bold text-sidebar-foreground">ProManagement</h1>
+            </div>
           </div>
-          <nav className="flex-1 space-y-1 px-2 py-4">
+          <nav className="flex-1 space-y-2 px-4 py-6">
             {navigation.map((item) => {
               const isActive = location.pathname === item.href;
               return (
@@ -79,10 +89,10 @@ export default function Layout() {
                   key={item.name}
                   to={item.href}
                   className={cn(
-                    "group flex items-center px-2 py-2 text-sm font-medium rounded-md",
+                    "group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200",
                     isActive
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                      ? "bg-gradient-to-r from-primary/15 to-accent/15 text-primary border border-primary/20 shadow-md"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-sm hover:-translate-y-0.5"
                   )}
                 >
                   <item.icon className="mr-3 h-5 w-5" />
@@ -115,7 +125,7 @@ export default function Layout() {
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Top navigation for mobile */}
-        <div className="sticky top-0 z-40 flex h-16 items-center gap-x-4 border-b border-gray-200 bg-background px-4 sm:gap-x-6 sm:px-6 lg:hidden">
+        <div className="sticky top-0 z-40 flex h-16 items-center gap-x-4 border-b border-border glass backdrop-blur-xl px-4 sm:gap-x-6 sm:px-6 lg:hidden">
           <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(true)}>
             <Menu className="h-5 w-5" />
           </Button>
