@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -70,12 +70,50 @@ export function TaskDetails({ task, onTaskUpdate }: TaskDetailsProps) {
   const [fileToUpload, setFileToUpload] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [showUserList, setShowUserList] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     console.log('TaskDetails mounting for task:', task.id);
     fetchSubtasks();
     fetchMessages();
     fetchUsers();
+
+    // Realtime subscription for messages
+    const messagesChannel = supabase
+      .channel('messages-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `task_id=eq.${task.id}`,
+        },
+        () => fetchMessages()
+      )
+      .subscribe();
+
+    // Realtime subscription for subtasks
+    const subtasksChannel = supabase
+      .channel('subtasks-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'subtasks',
+          filter: `task_id=eq.${task.id}`,
+        },
+        () => fetchSubtasks()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(messagesChannel);
+      supabase.removeChannel(subtasksChannel);
+    };
   }, [task.id]);
 
   const fetchSubtasks = async () => {
@@ -300,6 +338,32 @@ export function TaskDetails({ task, onTaskUpdate }: TaskDetailsProps) {
     }
   };
 
+  // Detect @ and show user list
+  const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setNewMessage(value);
+
+    const match = value.match(/@(\w*)$/);
+    if (match) {
+      setMentionQuery(match[1]);
+      setShowUserList(true);
+    } else {
+      setShowUserList(false);
+      setMentionQuery('');
+    }
+  };
+
+  // Insert mention
+  const handleUserMention = (user: User) => {
+    if (!textareaRef.current) return;
+    const value = newMessage;
+    const newValue = value.replace(/@(\w*)$/, `@${user.first_name} ${user.last_name} `);
+    setNewMessage(newValue);
+    setShowUserList(false);
+    setMentionQuery('');
+    textareaRef.current.focus();
+  };
+
   const statusConfig = {
     todo: { label: 'À faire', color: 'bg-gray-100 text-gray-800' },
     in_progress: { label: 'En cours', color: 'bg-blue-100 text-blue-800' },
@@ -463,101 +527,102 @@ export function TaskDetails({ task, onTaskUpdate }: TaskDetailsProps) {
             </CardHeader>
             <CardContent className="flex flex-col h-[65vh]">
               {/* Liste des messages, scrollable */}
-              <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+              <div className="flex-1 overflow-y-auto space-y-4 pr-1">
                 {messages.map((message) => {
-                  const isCurrentUser = message.sender_id === user?.id;
-                  const initials = `${message.profiles?.first_name?.[0] || ''}${message.profiles?.last_name?.[0] || ''}`;
-                  
+                  const isMine = user?.id === message.sender_id;
                   return (
-                    <div key={message.id} className={`flex gap-3 ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'}`}>
-                      {/* Avatar */}
-                      <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-semibold text-xs ${
-                        isCurrentUser 
-                          ? 'bg-primary text-primary-foreground' 
-                          : 'bg-secondary text-secondary-foreground'
-                      }`}>
-                        {initials}
-                      </div>
-                      
-                      {/* Message bubble */}
-                      <div className={`max-w-[70%] ${isCurrentUser ? 'items-end' : 'items-start'} flex flex-col`}>
-                        <div className={`rounded-2xl px-4 py-2 ${
-                          isCurrentUser 
-                            ? 'bg-primary text-primary-foreground rounded-br-md' 
-                            : 'bg-secondary text-secondary-foreground rounded-bl-md'
-                        }`}>
-                          {/* Nom et heure */}
-                          <div className={`flex items-center gap-2 mb-1 ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'}`}>
-                            <span className="text-xs font-medium opacity-90">
-                              {message.profiles?.first_name} {message.profiles?.last_name}
-                            </span>
-                            <span className="text-xs opacity-70">
-                              {new Date(message.created_at).toLocaleTimeString('fr-FR', { 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
-                              })}
-                            </span>
-                          </div>
-                          
-                          {/* Contenu du message */}
-                          {message.content && (
-                            <div className="text-sm whitespace-pre-wrap">
-                              {message.content}
-                            </div>
-                          )}
-                          
-                          {/* Fichier joint */}
-                          {message.file_url && message.file_name && (
-                            <div className="mt-2">
-                              {message.file_url.match(/\.(jpeg|jpg|png|gif|webp|bmp)$/i) ? (
-                                <img
-                                  src={message.file_url}
-                                  alt={message.file_name}
-                                  className="max-w-full rounded-lg cursor-pointer transition hover:opacity-90 shadow-sm"
-                                  onClick={() => setPreviewImage(message.file_url)}
-                                />
-                              ) : message.file_url.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
-                                <video
-                                  src={message.file_url}
-                                  controls
-                                  className="max-w-full rounded-lg shadow-sm"
-                                />
-                              ) : (
-                                <div className={`flex items-center gap-2 p-3 rounded-lg mt-2 ${
-                                  isCurrentUser 
-                                    ? 'bg-primary-foreground/10' 
-                                    : 'bg-primary/10'
-                                }`}>
-                                  <Paperclip className="h-4 w-4 opacity-70" />
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium truncate">{message.file_name}</p>
-                                    <a
-                                      href={message.file_url}
-                                      download={message.file_name}
-                                      className="text-xs opacity-80 hover:opacity-100 underline"
-                                    >
-                                      Télécharger
-                                    </a>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
+                    <div
+                      key={message.id}
+                      className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}
+                    >
+                      {!isMine && (
+                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-700 text-lg mr-2">
+                          {message.profiles?.first_name?.[0]}
+                          {message.profiles?.last_name?.[0]}
                         </div>
+                      )}
+                      <div
+                        className={`max-w-[70%] p-3 rounded-xl shadow ${
+                          isMine
+                            ? 'bg-blue-50 text-blue-900 border border-blue-200'
+                            : 'bg-gray-50 text-gray-900 border border-border'
+                        }`}
+                      >
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="font-semibold text-sm">
+                            {isMine ? 'Moi' : `${message.profiles?.first_name} ${message.profiles?.last_name}`}
+                          </span>
+                          <span className="text-xs text-muted-foreground ml-2">
+                            {new Date(message.created_at).toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="text-sm whitespace-pre-wrap mb-2">{message.content}</div>
+                        {message.file_url && message.file_name && (
+                          <div className="mt-2">
+                            {message.file_url.match(/\.(jpeg|jpg|png|gif|webp|bmp)$/i) ? (
+                              <img
+                                src={message.file_url}
+                                alt={message.file_name}
+                                className="max-w-xs rounded-md border cursor-pointer transition hover:scale-105"
+                                onClick={() => setPreviewImage(message.file_url)}
+                              />
+                            ) : (
+                              <a
+                                href={message.file_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center text-sm text-primary hover:underline"
+                              >
+                                <Paperclip className="h-4 w-4 mr-1" />
+                                {message.file_name}
+                              </a>
+                            )}
+                          </div>
+                        )}
                       </div>
+                      {isMine && (
+                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-200 flex items-center justify-center font-bold text-blue-700 text-lg ml-2">
+                          {message.profiles?.first_name?.[0]}
+                          {message.profiles?.last_name?.[0]}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
               </div>
               <Separator className="my-3" />
               {/* Formulaire d'ajout, toujours visible en bas */}
-              <div className="space-y-3">
+              <div className="space-y-3 relative">
                 <Textarea
+                  ref={textareaRef}
                   placeholder="Ajouter un commentaire..."
                   value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
+                  onChange={handleCommentChange}
                   rows={3}
                 />
+                {/* Liste des utilisateurs pour la mention */}
+                {showUserList && (
+                  <div className="absolute z-10 bg-white border rounded shadow mt-1 w-64 max-h-60 overflow-y-auto">
+                    {users
+                      .filter(u =>
+                        `${u.first_name} ${u.last_name}`.toLowerCase().includes(mentionQuery.toLowerCase())
+                      )
+                      .map(u => (
+                        <div
+                          key={u.id}
+                          className="px-3 py-2 cursor-pointer hover:bg-blue-50"
+                          onClick={() => handleUserMention(u)}
+                        >
+                          {u.first_name} {u.last_name} <span className="text-xs text-muted-foreground">({u.email})</span>
+                        </div>
+                      ))}
+                    {users.filter(u =>
+                      `${u.first_name} ${u.last_name}`.toLowerCase().includes(mentionQuery.toLowerCase())
+                    ).length === 0 && (
+                      <div className="px-3 py-2 text-muted-foreground text-sm">Aucun utilisateur trouvé</div>
+                    )}
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
                   <input
                     type="file"
