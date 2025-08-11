@@ -28,7 +28,6 @@ interface Task {
   created_by: string;
   start_date?: string;
   end_date?: string;
-  due_date: string;
   created_at: string;
   projects: { name: string };
 }
@@ -93,10 +92,24 @@ function TaskCard({ task, onTaskClick }: { task: Task; onTaskClick: (task: Task)
         )}
         <div className="flex items-center justify-between text-xs">
           <span className="text-muted-foreground">{task.projects?.name}</span>
-          <Badge variant="outline" className="text-xs">
-            {task.priority}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-xs">
+              {task.priority === 'high' ? '🔴 Haute' : 
+               task.priority === 'medium' ? '🟡 Moyenne' : 
+               task.priority === 'urgent' ? '🚨 Urgente' : '🟢 Basse'}
+            </Badge>
+          </div>
         </div>
+        {(task.start_date || task.end_date) && (
+          <div className="text-xs text-muted-foreground mt-2 space-y-1">
+            {task.start_date && (
+              <div>📅 Début: {new Date(task.start_date).toLocaleDateString('fr-FR')} à {new Date(task.start_date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
+            )}
+            {task.end_date && (
+              <div>🏁 Fin: {new Date(task.end_date).toLocaleDateString('fr-FR')} à {new Date(task.end_date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

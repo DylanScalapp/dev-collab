@@ -24,25 +24,16 @@ const taskSchema = z.object({
   priority: z.enum(['low', 'medium', 'high', 'urgent']),
   project_id: z.string().uuid('Veuillez sélectionner un projet'),
   assigned_users: z.array(z.string().uuid()),
-  start_date: z.date().optional(),
-  end_date: z.date().optional(),
-  due_date: z.date().optional(),
+  start_date: z.string().optional(),
+  end_date: z.string().optional(),
 }).refine((data) => {
   if (data.start_date && data.end_date) {
-    return data.end_date >= data.start_date;
+    return new Date(data.end_date) >= new Date(data.start_date);
   }
   return true;
 }, {
   message: "La date de fin doit être postérieure à la date de début",
   path: ["end_date"]
-}).refine((data) => {
-  if (data.start_date && data.due_date) {
-    return data.due_date >= data.start_date;
-  }
-  return true;
-}, {
-  message: "La date d'échéance doit être postérieure à la date de début",
-  path: ["due_date"]
 });
 
 type TaskFormData = z.infer<typeof taskSchema>;
@@ -68,7 +59,6 @@ interface Task {
   project_id: string;
   start_date?: string;
   end_date?: string;
-  due_date: string;
 }
 
 interface TaskFormProps {
@@ -98,18 +88,16 @@ export function TaskForm({ task, onSubmit, onCancel }: TaskFormProps) {
       priority: task.priority as 'low' | 'medium' | 'high' | 'urgent',
       project_id: task.project_id,
       assigned_users: [], // Will be loaded from task_assignments
-      start_date: task.start_date ? new Date(task.start_date) : undefined,
-      end_date: task.end_date ? new Date(task.end_date) : undefined,
-      due_date: task.due_date ? new Date(task.due_date) : undefined,
+      start_date: task.start_date || '',
+      end_date: task.end_date || '',
     } : {
       title: '',
       description: '',
       priority: 'medium',
       project_id: '',
       assigned_users: [],
-      start_date: undefined,
-      end_date: undefined,
-      due_date: undefined,
+      start_date: '',
+      end_date: '',
     },
   });
 
@@ -180,9 +168,8 @@ export function TaskForm({ task, onSubmit, onCancel }: TaskFormProps) {
             description: data.description || null,
             priority: data.priority,
             project_id: data.project_id,
-            start_date: data.start_date?.toISOString() || null,
-            end_date: data.end_date?.toISOString() || null,
-            due_date: data.due_date?.toISOString() || null,
+            start_date: data.start_date || null,
+            end_date: data.end_date || null,
           })
           .eq('id', task.id);
 
@@ -220,9 +207,8 @@ export function TaskForm({ task, onSubmit, onCancel }: TaskFormProps) {
           description: data.description || null,
           priority: data.priority,
           project_id: data.project_id,
-          start_date: data.start_date?.toISOString() || null,
-          end_date: data.end_date?.toISOString() || null,
-          due_date: data.due_date?.toISOString() || null,
+          start_date: data.start_date || null,
+          end_date: data.end_date || null,
           created_by: user.id,
           status: 'todo' as const,
         };
@@ -415,39 +401,15 @@ export function TaskForm({ task, onSubmit, onCancel }: TaskFormProps) {
             control={form.control}
             name="start_date"
             render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Date de début</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        {field.value ? (
-                          format(field.value, "PPP", { locale: fr })
-                        ) : (
-                          <span>Choisir une date</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      disabled={(date) =>
-                        date < new Date() || date < new Date("1900-01-01")
-                      }
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+              <FormItem>
+                <FormLabel>Date et heure de début</FormLabel>
+                <FormControl>
+                  <Input
+                    type="datetime-local"
+                    {...field}
+                    className="w-full"
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -457,84 +419,20 @@ export function TaskForm({ task, onSubmit, onCancel }: TaskFormProps) {
             control={form.control}
             name="end_date"
             render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Date de fin</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        {field.value ? (
-                          format(field.value, "PPP", { locale: fr })
-                        ) : (
-                          <span>Choisir une date</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      disabled={(date) =>
-                        date < new Date() || date < new Date("1900-01-01")
-                      }
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+              <FormItem>
+                <FormLabel>Date et heure de fin</FormLabel>
+                <FormControl>
+                  <Input
+                    type="datetime-local"
+                    {...field}
+                    className="w-full"
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
-
-        <FormField
-          control={form.control}
-          name="due_date"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Date d'échéance</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full pl-3 text-left font-normal",
-                        !field.value && "text-muted-foreground"
-                      )}
-                    >
-                      {field.value ? (
-                        format(field.value, "PPP", { locale: fr })
-                      ) : (
-                        <span>Sélectionner une date</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={field.value}
-                    onSelect={field.onChange}
-                    disabled={(date) => date < new Date()}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
 
         <div className="flex gap-3 justify-end">
           <Button type="button" variant="outline" onClick={onCancel}>

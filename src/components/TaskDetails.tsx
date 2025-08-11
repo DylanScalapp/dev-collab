@@ -23,7 +23,6 @@ interface Task {
   created_by: string;
   start_date?: string;
   end_date?: string;
-  due_date: string;
   created_at: string;
   projects: { name: string };
 }
@@ -490,25 +489,19 @@ export function TaskDetails({ task, onTaskUpdate }: TaskDetailsProps) {
               )}
               {task.start_date && (
                 <div className="flex justify-between">
-                  <span className="text-sm font-medium">Date de début:</span>
-                  <span className="text-sm">{new Date(task.start_date).toLocaleDateString('fr-FR')}</span>
+                  <span className="text-sm font-medium">📅 Date de début:</span>
+                  <span className="text-sm">{new Date(task.start_date).toLocaleDateString('fr-FR')} à {new Date(task.start_date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
               )}
               {task.end_date && (
                 <div className="flex justify-between">
-                  <span className="text-sm font-medium">Date de fin:</span>
-                  <span className="text-sm">{new Date(task.end_date).toLocaleDateString('fr-FR')}</span>
-                </div>
-              )}
-              {task.due_date && (
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">Date d'échéance:</span>
-                  <span className="text-sm">{new Date(task.due_date).toLocaleDateString('fr-FR')}</span>
+                  <span className="text-sm font-medium">🏁 Date de fin:</span>
+                  <span className="text-sm">{new Date(task.end_date).toLocaleDateString('fr-FR')} à {new Date(task.end_date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
               )}
               <div className="flex justify-between">
                 <span className="text-sm font-medium">Créé le:</span>
-                <span className="text-sm">{new Date(task.created_at).toLocaleDateString()}</span>
+                <span className="text-sm">{new Date(task.created_at).toLocaleDateString('fr-FR')}</span>
               </div>
             </CardContent>
           </Card>

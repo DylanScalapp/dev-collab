@@ -15,7 +15,6 @@ interface Task {
   priority: string;
   start_date?: string;
   end_date?: string;
-  due_date: string;
   created_at: string;
   task_assignments?: Array<{
     user_id: string;
@@ -218,7 +217,9 @@ export default function ProjectTasks() {
                       {getStatusText(task.status)}
                     </Badge>
                     <Badge variant={getPriorityColor(task.priority) as any}>
-                      {task.priority === 'high' ? 'Haute' : task.priority === 'medium' ? 'Moyenne' : 'Basse'}
+                      {task.priority === 'high' ? '🔴 Haute' : 
+                       task.priority === 'medium' ? '🟡 Moyenne' : 
+                       task.priority === 'urgent' ? '🚨 Urgente' : '🟢 Basse'}
                     </Badge>
                   </div>
                 </div>
@@ -232,35 +233,30 @@ export default function ProjectTasks() {
                 </p>
               )}
               
-              <div className="space-y-2 text-sm text-muted-foreground">
-                {task.task_assignments && task.task_assignments.length > 0 && (
-                  <div>
-                    <span className="font-medium">Assigné à: </span>
-                    {task.task_assignments.map((assignment, idx) => (
-                      <span key={assignment.user_id}>
-                        {assignment.profiles.first_name} {assignment.profiles.last_name}
-                        {idx < task.task_assignments!.length - 1 ? ', ' : ''}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                
-                <div className="flex items-center justify-between">
-                  <div className="space-x-4">
-                    {task.start_date && (
-                      <span>Début: {new Date(task.start_date).toLocaleDateString('fr-FR')}</span>
-                    )}
-                    {task.end_date && (
-                      <span>Fin: {new Date(task.end_date).toLocaleDateString('fr-FR')}</span>
-                    )}
-                  </div>
-                  <div>
-                    {task.due_date && (
-                      <span>Échéance: {new Date(task.due_date).toLocaleDateString('fr-FR')}</span>
-                    )}
-                  </div>
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  {task.task_assignments && task.task_assignments.length > 0 && (
+                    <div>
+                      <span className="font-medium">👥 Assigné à: </span>
+                      {task.task_assignments.map((assignment, idx) => (
+                        <span key={assignment.user_id}>
+                          {assignment.profiles.first_name} {assignment.profiles.last_name}
+                          {idx < task.task_assignments!.length - 1 ? ', ' : ''}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {(task.start_date || task.end_date) && (
+                    <div className="space-y-1">
+                      {task.start_date && (
+                        <div>📅 <span className="font-medium">Début:</span> {new Date(task.start_date).toLocaleDateString('fr-FR')} à {new Date(task.start_date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
+                      )}
+                      {task.end_date && (
+                        <div>🏁 <span className="font-medium">Fin:</span> {new Date(task.end_date).toLocaleDateString('fr-FR')} à {new Date(task.end_date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
+                      )}
+                    </div>
+                  )}
                 </div>
-              </div>
             </CardContent>
           </Card>
         ))}
