@@ -21,7 +21,8 @@ interface Task {
   priority: string;
   project_id: string;
   created_by: string;
-  assigned_to: string;
+  start_date?: string;
+  end_date?: string;
   due_date: string;
   created_at: string;
   projects: { name: string };
@@ -373,7 +374,40 @@ export function TaskDetails({ task, onTaskUpdate }: TaskDetailsProps) {
     cancelled: { label: 'Annulé', color: 'bg-red-100 text-red-800' }
   };
 
-  const assignedUser = users.find(u => u.id === task.assigned_to);
+  // Get assigned users from task_assignments table
+  const [assignedUsers, setAssignedUsers] = useState<User[]>([]);
+  
+  useEffect(() => {
+    fetchAssignedUsers();
+  }, [task.id]);
+
+  const fetchAssignedUsers = async () => {
+    try {
+      const { data: assignments } = await supabase
+        .from('task_assignments')
+        .select('user_id')
+        .eq('task_id', task.id);
+
+      if (assignments && assignments.length > 0) {
+        const userIds = assignments.map(a => a.user_id);
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, first_name, last_name, email')
+          .in('user_id', userIds);
+
+        const assignedUsersList = profiles?.map(profile => ({
+          id: profile.user_id,
+          first_name: profile.first_name || '',
+          last_name: profile.last_name || '',
+          email: profile.email
+        })) || [];
+
+        setAssignedUsers(assignedUsersList);
+      }
+    } catch (error) {
+      console.error('Error fetching assigned users:', error);
+    }
+  };
   const completedSubtasks = subtasks.filter(s => s.is_completed).length;
 
   if (loading) {
@@ -441,16 +475,35 @@ export function TaskDetails({ task, onTaskUpdate }: TaskDetailsProps) {
               <CardTitle className="text-lg">Informations</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {assignedUser && (
+              {assignedUsers.length > 0 && (
                 <div className="flex justify-between">
                   <span className="text-sm font-medium">Assigné à:</span>
-                  <span className="text-sm">{assignedUser.first_name} {assignedUser.last_name}</span>
+                  <div className="text-sm">
+                    {assignedUsers.map((user, idx) => (
+                      <span key={user.id}>
+                        {user.first_name} {user.last_name}
+                        {idx < assignedUsers.length - 1 ? ', ' : ''}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {task.start_date && (
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium">Date de début:</span>
+                  <span className="text-sm">{new Date(task.start_date).toLocaleDateString('fr-FR')}</span>
+                </div>
+              )}
+              {task.end_date && (
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium">Date de fin:</span>
+                  <span className="text-sm">{new Date(task.end_date).toLocaleDateString('fr-FR')}</span>
                 </div>
               )}
               {task.due_date && (
                 <div className="flex justify-between">
                   <span className="text-sm font-medium">Date d'échéance:</span>
-                  <span className="text-sm">{new Date(task.due_date).toLocaleDateString()}</span>
+                  <span className="text-sm">{new Date(task.due_date).toLocaleDateString('fr-FR')}</span>
                 </div>
               )}
               <div className="flex justify-between">

@@ -26,7 +26,8 @@ interface Task {
   priority: string;
   project_id: string;
   created_by: string;
-  assigned_to: string;
+  start_date?: string;
+  end_date?: string;
   due_date: string;
   created_at: string;
   projects: { name: string };

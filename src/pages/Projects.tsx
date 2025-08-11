@@ -17,6 +17,9 @@ interface Project {
   name: string;
   description: string;
   status: string;
+  priority?: string;
+  start_date?: string;
+  end_date?: string;
   created_by: string;
   created_at: string;
   updated_at: string;

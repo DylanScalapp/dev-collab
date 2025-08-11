@@ -14,15 +14,35 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { toast } from '@/hooks/use-toast';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 const taskSchema = z.object({
   title: z.string().min(1, 'Le titre est requis').max(100, 'Le titre ne peut pas dépasser 100 caractères'),
   description: z.string().optional(),
   priority: z.enum(['low', 'medium', 'high', 'urgent']),
   project_id: z.string().uuid('Veuillez sélectionner un projet'),
-  assigned_to: z.string().uuid().optional(),
+  assigned_users: z.array(z.string().uuid()),
+  start_date: z.date().optional(),
+  end_date: z.date().optional(),
   due_date: z.date().optional(),
+}).refine((data) => {
+  if (data.start_date && data.end_date) {
+    return data.end_date >= data.start_date;
+  }
+  return true;
+}, {
+  message: "La date de fin doit être postérieure à la date de début",
+  path: ["end_date"]
+}).refine((data) => {
+  if (data.start_date && data.due_date) {
+    return data.due_date >= data.start_date;
+  }
+  return true;
+}, {
+  message: "La date d'échéance doit être postérieure à la date de début",
+  path: ["due_date"]
 });
 
 type TaskFormData = z.infer<typeof taskSchema>;
@@ -46,7 +66,8 @@ interface Task {
   status: 'todo' | 'in_progress' | 'review' | 'to_modify' | 'completed' | 'cancelled';
   priority: string;
   project_id: string;
-  assigned_to: string;
+  start_date?: string;
+  end_date?: string;
   due_date: string;
 }
 
@@ -76,14 +97,19 @@ export function TaskForm({ task, onSubmit, onCancel }: TaskFormProps) {
       description: task.description,
       priority: task.priority as 'low' | 'medium' | 'high' | 'urgent',
       project_id: task.project_id,
-      assigned_to: task.assigned_to || undefined,
+      assigned_users: [], // Will be loaded from task_assignments
+      start_date: task.start_date ? new Date(task.start_date) : undefined,
+      end_date: task.end_date ? new Date(task.end_date) : undefined,
       due_date: task.due_date ? new Date(task.due_date) : undefined,
     } : {
       title: '',
       description: '',
       priority: 'medium',
       project_id: '',
-      assigned_to: undefined,
+      assigned_users: [],
+      start_date: undefined,
+      end_date: undefined,
+      due_date: undefined,
     },
   });
 
@@ -147,19 +173,41 @@ export function TaskForm({ task, onSubmit, onCancel }: TaskFormProps) {
     try {
       if (task) {
         // Update existing task
-        const { error } = await supabase
+        const { error: taskError } = await supabase
           .from('tasks')
           .update({
             title: data.title,
             description: data.description || null,
             priority: data.priority,
             project_id: data.project_id,
-            assigned_to: data.assigned_to || null,
+            start_date: data.start_date?.toISOString() || null,
+            end_date: data.end_date?.toISOString() || null,
             due_date: data.due_date?.toISOString() || null,
           })
           .eq('id', task.id);
 
-        if (error) throw error;
+        if (taskError) throw taskError;
+
+        // Update task assignments
+        // First delete existing assignments
+        await supabase
+          .from('task_assignments')
+          .delete()
+          .eq('task_id', task.id);
+
+        // Then insert new assignments
+        if (data.assigned_users.length > 0) {
+          const assignments = data.assigned_users.map(userId => ({
+            task_id: task.id,
+            user_id: userId,
+          }));
+
+          const { error: assignError } = await supabase
+            .from('task_assignments')
+            .insert(assignments);
+
+          if (assignError) throw assignError;
+        }
 
         toast({
           title: 'Succès',
@@ -172,17 +220,34 @@ export function TaskForm({ task, onSubmit, onCancel }: TaskFormProps) {
           description: data.description || null,
           priority: data.priority,
           project_id: data.project_id,
-          assigned_to: data.assigned_to || null,
+          start_date: data.start_date?.toISOString() || null,
+          end_date: data.end_date?.toISOString() || null,
           due_date: data.due_date?.toISOString() || null,
           created_by: user.id,
           status: 'todo' as const,
         };
 
-        const { error } = await supabase
+        const { data: newTask, error: taskError } = await supabase
           .from('tasks')
-          .insert([taskData]);
+          .insert([taskData])
+          .select()
+          .single();
 
-        if (error) throw error;
+        if (taskError) throw taskError;
+
+        // Create task assignments if any
+        if (data.assigned_users.length > 0) {
+          const assignments = data.assigned_users.map(userId => ({
+            task_id: newTask.id,
+            user_id: userId,
+          }));
+
+          const { error: assignError } = await supabase
+            .from('task_assignments')
+            .insert(assignments);
+
+          if (assignError) throw assignError;
+        }
 
         toast({
           title: 'Succès',
@@ -292,28 +357,144 @@ export function TaskForm({ task, onSubmit, onCancel }: TaskFormProps) {
 
         <FormField
           control={form.control}
-          name="assigned_to"
+          name="assigned_users"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Assigné à</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un utilisateur (optionnel)" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.first_name} {user.last_name} ({user.email})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FormLabel>Développeurs assignés</FormLabel>
+              <div className="space-y-2">
+                {field.value.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {field.value.map((userId) => {
+                      const user = users.find(u => u.id === userId);
+                      return user ? (
+                        <Badge key={userId} variant="secondary" className="text-xs">
+                          {user.first_name} {user.last_name}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newValue = field.value.filter(id => id !== userId);
+                              field.onChange(newValue);
+                            }}
+                            className="ml-1 text-red-500 hover:text-red-700"
+                          >
+                            ×
+                          </button>
+                        </Badge>
+                      ) : null;
+                    })}
+                  </div>
+                )}
+                <Select onValueChange={(value) => {
+                  if (value && !field.value.includes(value)) {
+                    field.onChange([...field.value, value]);
+                  }
+                }}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Ajouter un développeur" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {users
+                      .filter(user => !field.value.includes(user.id))
+                      .map((user) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.first_name} {user.last_name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <FormMessage />
             </FormItem>
           )}
         />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="start_date"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Date de début</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full pl-3 text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value ? (
+                          format(field.value, "PPP", { locale: fr })
+                        ) : (
+                          <span>Choisir une date</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      disabled={(date) =>
+                        date < new Date() || date < new Date("1900-01-01")
+                      }
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="end_date"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Date de fin</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full pl-3 text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value ? (
+                          format(field.value, "PPP", { locale: fr })
+                        ) : (
+                          <span>Choisir une date</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      disabled={(date) =>
+                        date < new Date() || date < new Date("1900-01-01")
+                      }
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <FormField
           control={form.control}
@@ -332,7 +513,7 @@ export function TaskForm({ task, onSubmit, onCancel }: TaskFormProps) {
                       )}
                     >
                       {field.value ? (
-                        format(field.value, "PPP", { locale: undefined })
+                        format(field.value, "PPP", { locale: fr })
                       ) : (
                         <span>Sélectionner une date</span>
                       )}

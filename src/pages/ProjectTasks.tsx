@@ -13,13 +13,17 @@ interface Task {
   description: string;
   status: 'todo' | 'in_progress' | 'review' | 'to_modify' | 'completed' | 'cancelled';
   priority: string;
+  start_date?: string;
+  end_date?: string;
   due_date: string;
-  assigned_to: string;
   created_at: string;
-  assigned_profile?: {
-    first_name: string;
-    last_name: string;
-  };
+  task_assignments?: Array<{
+    user_id: string;
+    profiles: {
+      first_name: string;
+      last_name: string;
+    };
+  }>;
 }
 
 interface Project {
@@ -63,23 +67,39 @@ export default function ProjectTasks() {
 
       if (tasksError) throw tasksError;
 
-      // Fetch assigned profiles separately
-      const tasksWithProfiles = await Promise.all(
+      // Fetch task assignments separately
+      const tasksWithAssignments = await Promise.all(
         (tasksData || []).map(async (task) => {
-          let assigned_profile = null;
-          if (task.assigned_to) {
-            const { data: profileData } = await supabase
+          const { data: assignments } = await supabase
+            .from('task_assignments')
+            .select('user_id')
+            .eq('task_id', task.id);
+
+          let assignmentsWithProfiles = [];
+          if (assignments && assignments.length > 0) {
+            const userIds = assignments.map(a => a.user_id);
+            const { data: profiles } = await supabase
               .from('profiles')
-              .select('first_name, last_name')
-              .eq('user_id', task.assigned_to)
-              .single();
-            assigned_profile = profileData;
+              .select('user_id, first_name, last_name')
+              .in('user_id', userIds);
+
+            assignmentsWithProfiles = assignments.map(assignment => ({
+              user_id: assignment.user_id,
+              profiles: profiles?.find(p => p.user_id === assignment.user_id) || {
+                first_name: 'Utilisateur',
+                last_name: 'Inconnu'
+              }
+            }));
           }
-          return { ...task, assigned_profile };
+
+          return {
+            ...task,
+            task_assignments: assignmentsWithProfiles
+          };
         })
       );
 
-      setTasks(tasksWithProfiles);
+      setTasks(tasksWithAssignments);
     } catch (error) {
       console.error('Error fetching project tasks:', error);
     } finally {
@@ -212,18 +232,33 @@ export default function ProjectTasks() {
                 </p>
               )}
               
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <div>
-                  {task.assigned_profile && (
-                    <span>
-                      Assigné à: {task.assigned_profile.first_name} {task.assigned_profile.last_name}
-                    </span>
-                  )}
-                </div>
-                <div>
-                  {task.due_date && (
-                    <span>Échéance: {new Date(task.due_date).toLocaleDateString('fr-FR')}</span>
-                  )}
+              <div className="space-y-2 text-sm text-muted-foreground">
+                {task.task_assignments && task.task_assignments.length > 0 && (
+                  <div>
+                    <span className="font-medium">Assigné à: </span>
+                    {task.task_assignments.map((assignment, idx) => (
+                      <span key={assignment.user_id}>
+                        {assignment.profiles.first_name} {assignment.profiles.last_name}
+                        {idx < task.task_assignments!.length - 1 ? ', ' : ''}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                
+                <div className="flex items-center justify-between">
+                  <div className="space-x-4">
+                    {task.start_date && (
+                      <span>Début: {new Date(task.start_date).toLocaleDateString('fr-FR')}</span>
+                    )}
+                    {task.end_date && (
+                      <span>Fin: {new Date(task.end_date).toLocaleDateString('fr-FR')}</span>
+                    )}
+                  </div>
+                  <div>
+                    {task.due_date && (
+                      <span>Échéance: {new Date(task.due_date).toLocaleDateString('fr-FR')}</span>
+                    )}
+                  </div>
                 </div>
               </div>
             </CardContent>

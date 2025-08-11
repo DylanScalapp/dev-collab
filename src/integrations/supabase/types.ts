@@ -68,6 +68,45 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          read: boolean
+          related_id: string | null
+          related_type: string | null
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          read?: boolean
+          related_id?: string | null
+          related_type?: string | null
+          title: string
+          type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          read?: boolean
+          related_id?: string | null
+          related_type?: string | null
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -141,8 +180,11 @@ export type Database = {
           created_at: string | null
           created_by: string
           description: string | null
+          end_date: string | null
           id: string
           name: string
+          priority: string | null
+          start_date: string | null
           status: string | null
           updated_at: string | null
         }
@@ -150,8 +192,11 @@ export type Database = {
           created_at?: string | null
           created_by: string
           description?: string | null
+          end_date?: string | null
           id?: string
           name: string
+          priority?: string | null
+          start_date?: string | null
           status?: string | null
           updated_at?: string | null
         }
@@ -159,8 +204,11 @@ export type Database = {
           created_at?: string | null
           created_by?: string
           description?: string | null
+          end_date?: string | null
           id?: string
           name?: string
+          priority?: string | null
+          start_date?: string | null
           status?: string | null
           updated_at?: string | null
         }
@@ -241,40 +289,43 @@ export type Database = {
       }
       tasks: {
         Row: {
-          assigned_to: string | null
           created_at: string | null
           created_by: string
           description: string | null
           due_date: string | null
+          end_date: string | null
           id: string
           priority: string | null
           project_id: string | null
+          start_date: string | null
           status: Database["public"]["Enums"]["task_status"] | null
           title: string
           updated_at: string | null
         }
         Insert: {
-          assigned_to?: string | null
           created_at?: string | null
           created_by: string
           description?: string | null
           due_date?: string | null
+          end_date?: string | null
           id?: string
           priority?: string | null
           project_id?: string | null
+          start_date?: string | null
           status?: Database["public"]["Enums"]["task_status"] | null
           title: string
           updated_at?: string | null
         }
         Update: {
-          assigned_to?: string | null
           created_at?: string | null
           created_by?: string
           description?: string | null
           due_date?: string | null
+          end_date?: string | null
           id?: string
           priority?: string | null
           project_id?: string | null
+          start_date?: string | null
           status?: Database["public"]["Enums"]["task_status"] | null
           title?: string
           updated_at?: string | null
