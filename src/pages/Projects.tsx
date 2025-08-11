@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Plus, Search, FolderOpen, Users, Calendar, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ProjectForm } from '@/components/forms/ProjectForm';
+import { ProjectSettingsDialog } from '@/components/ProjectSettingsDialog';
 
 interface Project {
   id: string;
@@ -37,6 +38,7 @@ export default function Projects() {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   useEffect(() => {
     fetchProjects();
@@ -246,14 +248,18 @@ export default function Projects() {
 
                 {/* Actions */}
                 <div className="flex gap-2 pt-2">
-                  <Link to={`/projects/${project.id}`} className="flex-1">
+                  <Link to={`/project-tasks/${project.id}`} className="flex-1">
                     <Button variant="outline" size="sm" className="w-full">
                       <Eye className="h-4 w-4 mr-1" />
                       Voir les tâches
                     </Button>
                   </Link>
                   {isAdmin && (
-                    <Button variant="ghost" size="sm">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setSelectedProject(project)}
+                    >
                       ⚙️
                     </Button>
                   )}
@@ -295,6 +301,19 @@ export default function Projects() {
             </Dialog>
           )}
         </div>
+      )}
+
+      {/* Project Settings Dialog */}
+      {selectedProject && (
+        <ProjectSettingsDialog
+          project={selectedProject}
+          isOpen={!!selectedProject}
+          onClose={() => setSelectedProject(null)}
+          onProjectUpdated={() => {
+            fetchProjects();
+            setSelectedProject(null);
+          }}
+        />
       )}
     </div>
   );
