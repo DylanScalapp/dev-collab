@@ -496,30 +496,51 @@ export function TaskDetails({ task, onTaskUpdate }: TaskDetailsProps) {
           {/* Messages list */}
           <div className="space-y-4">
             {messages.map((message) => (
-              <div key={message.id} className="border rounded-lg p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="font-medium text-sm">
-                    {message.profiles?.first_name} {message.profiles?.last_name}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {new Date(message.created_at).toLocaleString()}
-                  </div>
+              <div key={message.id} className="bg-white border border-border rounded-xl p-4 shadow-sm flex gap-3">
+                {/* Avatar */}
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-700 text-lg">
+                  {message.profiles?.first_name?.[0]}
+                  {message.profiles?.last_name?.[0]}
                 </div>
-                <p className="text-sm mb-2">{message.content}</p>
-                {message.file_url && message.file_name && (
-                  <a
-                    href={message.file_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
-                  >
-                    <Paperclip className="h-3 w-3" />
-                    {message.file_name}
-                  </a>
-                )}
+                {/* Message content */}
+                <div className="flex-1">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="font-semibold text-blue-900">
+                      {message.profiles?.first_name} {message.profiles?.last_name}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(message.created_at).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="text-sm text-foreground whitespace-pre-wrap mb-2">
+                    {message.content}
+                  </div>
+                  {message.file_url && message.file_name && (
+                    <div className="mt-2">
+                      {message.file_url.match(/\.(jpeg|jpg|png|gif|webp|bmp)$/i) ? (
+                        <img
+                          src={message.file_url}
+                          alt={message.file_name}
+                          className="max-w-xs rounded-md border"
+                        />
+                      ) : (
+                        <a
+                          href={message.file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center text-sm text-primary hover:underline"
+                        >
+                          <Paperclip className="h-4 w-4 mr-1" />
+                          {message.file_name}
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
+
         </CardContent>
       </Card>
     </div>
