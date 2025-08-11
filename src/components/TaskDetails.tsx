@@ -320,243 +320,247 @@ export function TaskDetails({ task, onTaskUpdate }: TaskDetailsProps) {
   console.log('TaskDetails rendering with data:', { subtasks, messages, users });
 
   return (
-    <div className="px-6 pb-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div className="space-y-2">
-          <h2 className="text-2xl font-bold">{task.title}</h2>
-          <div className="flex items-center gap-2">
-            <Badge className={statusConfig[task.status].color}>
-              {statusConfig[task.status].label}
-            </Badge>
-            <Badge variant="outline">{task.priority}</Badge>
-            <span className="text-sm text-muted-foreground">
-              Projet: {task.projects?.name}
-            </span>
-          </div>
-        </div>
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" size="sm">
-              <Edit3 className="h-4 w-4 mr-2" />
-              Modifier
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Modifier la tâche</DialogTitle>
-            </DialogHeader>
-            <TaskForm
-              task={task}
-              onSubmit={() => {
-                setIsEditDialogOpen(false);
-                onTaskUpdate();
-              }}
-              onCancel={() => setIsEditDialogOpen(false)}
-            />
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* Description */}
-      {task.description && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Description</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm">{task.description}</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Task Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Informations</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {assignedUser && (
-            <div className="flex justify-between">
-              <span className="text-sm font-medium">Assigné à:</span>
-              <span className="text-sm">{assignedUser.first_name} {assignedUser.last_name}</span>
-            </div>
-          )}
-          {task.due_date && (
-            <div className="flex justify-between">
-              <span className="text-sm font-medium">Date d'échéance:</span>
-              <span className="text-sm">{new Date(task.due_date).toLocaleDateString()}</span>
-            </div>
-          )}
-          <div className="flex justify-between">
-            <span className="text-sm font-medium">Créé le:</span>
-            <span className="text-sm">{new Date(task.created_at).toLocaleDateString()}</span>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Subtasks */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center justify-between">
-            Sous-tâches ({completedSubtasks}/{subtasks.length})
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={addSubtask}
-              disabled={!newSubtaskTitle.trim()}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-2">
-            <Input
-              placeholder="Nouvelle sous-tâche..."
-              value={newSubtaskTitle}
-              onChange={(e) => setNewSubtaskTitle(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && addSubtask()}
-              className="flex-1"
-            />
-          </div>
+    <div className="px-6 pb-6">
+      <div className="flex flex-col lg:flex-row gap-6 h-[80vh]">
+        {/* Partie gauche : détails */}
+        <div className="flex-1 lg:w-[40%] bg-transparent space-y-6 overflow-y-auto rounded-xl p-1 h-full">
+          {/* Header */}
           <div className="space-y-2">
-            {subtasks.map((subtask) => (
-              <div key={subtask.id} className="flex items-center gap-3 p-2 rounded border">
-                <Checkbox
-                  checked={subtask.is_completed}
-                  onCheckedChange={() => toggleSubtask(subtask.id, subtask.is_completed)}
-                />
-                <span className={`flex-1 ${subtask.is_completed ? 'line-through text-muted-foreground' : ''}`}>
-                  {subtask.title}
-                </span>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Dialog pour agrandir l'image */}
-      <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
-        <DialogContent className="flex flex-col items-center justify-center">
-          {previewImage && (
-            <img
-              src={previewImage}
-              alt="Aperçu"
-              className="max-h-[80vh] max-w-full rounded-xl border"
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Comments */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <MessageSquare className="h-5 w-5" />
-            Commentaires ({messages.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Add comment */}
-          <div className="space-y-3">
-            <Textarea
-              placeholder="Ajouter un commentaire..."
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              rows={3}
-            />
+            <h2 className="text-2xl font-bold">{task.title}</h2>
             <div className="flex items-center gap-2">
-              <input
-                type="file"
-                id="file-upload"
-                className="hidden"
-                onChange={(e) => setFileToUpload(e.target.files?.[0] || null)}
-              />
-              <label htmlFor="file-upload">
-                <Button variant="outline" size="sm" asChild>
-                  <span className="cursor-pointer">
-                    <Paperclip className="h-4 w-4 mr-2" />
-                    Joindre un fichier
-                  </span>
-                </Button>
-              </label>
-              {fileToUpload && (
-                <span className="text-sm text-muted-foreground">
-                  {fileToUpload.name}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setFileToUpload(null)}
-                    className="ml-2 h-auto p-0"
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </span>
-              )}
-              <Button 
-                onClick={addMessage}
-                disabled={!newMessage.trim() && !fileToUpload}
-                size="sm"
-              >
-                <Save className="h-4 w-4 mr-2" />
-                Publier
-              </Button>
+              <Badge className={statusConfig[task.status].color}>
+                {statusConfig[task.status].label}
+              </Badge>
+              <Badge variant="outline">{task.priority}</Badge>
+              <span className="text-sm text-muted-foreground">
+                Projet: {task.projects?.name}
+              </span>
             </div>
           </div>
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Edit3 className="h-4 w-4 mr-2" />
+                Modifier
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Modifier la tâche</DialogTitle>
+              </DialogHeader>
+              <TaskForm
+                task={task}
+                onSubmit={() => {
+                  setIsEditDialogOpen(false);
+                  onTaskUpdate();
+                }}
+                onCancel={() => setIsEditDialogOpen(false)}
+              />
+            </DialogContent>
+          </Dialog>
 
-          <Separator />
+          {/* Description */}
+          {task.description && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Description</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm">{task.description}</p>
+              </CardContent>
+            </Card>
+          )}
 
-          {/* Messages list */}
-          <div className="space-y-4">
-            {messages.map((message) => (
-              <div key={message.id} className="bg-white border border-border rounded-xl p-4 shadow-sm flex gap-3">
-                {/* Avatar */}
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-700 text-lg">
-                  {message.profiles?.first_name?.[0]}
-                  {message.profiles?.last_name?.[0]}
+          {/* Task Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Informations</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {assignedUser && (
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium">Assigné à:</span>
+                  <span className="text-sm">{assignedUser.first_name} {assignedUser.last_name}</span>
                 </div>
-                {/* Message content */}
-                <div className="flex-1">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="font-semibold text-blue-900">
-                      {message.profiles?.first_name} {message.profiles?.last_name}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(message.created_at).toLocaleString()}
+              )}
+              {task.due_date && (
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium">Date d'échéance:</span>
+                  <span className="text-sm">{new Date(task.due_date).toLocaleDateString()}</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-sm font-medium">Créé le:</span>
+                <span className="text-sm">{new Date(task.created_at).toLocaleDateString()}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Subtasks */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center justify-between">
+                Sous-tâches ({completedSubtasks}/{subtasks.length})
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={addSubtask}
+                  disabled={!newSubtaskTitle.trim()}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Nouvelle sous-tâche..."
+                  value={newSubtaskTitle}
+                  onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && addSubtask()}
+                  className="flex-1"
+                />
+              </div>
+              <div className="space-y-2">
+                {subtasks.map((subtask) => (
+                  <div key={subtask.id} className="flex items-center gap-3 p-2 rounded border">
+                    <Checkbox
+                      checked={subtask.is_completed}
+                      onCheckedChange={() => toggleSubtask(subtask.id, subtask.is_completed)}
+                    />
+                    <span className={`flex-1 ${subtask.is_completed ? 'line-through text-muted-foreground' : ''}`}>
+                      {subtask.title}
                     </span>
                   </div>
-                  <div className="text-sm text-foreground whitespace-pre-wrap mb-2">
-                    {message.content}
-                  </div>
-                  {message.file_url && message.file_name && (
-                    <div className="mt-2">
-                      {message.file_url.match(/\.(jpeg|jpg|png|gif|webp|bmp)$/i) ? (
-                        <img
-                          src={message.file_url}
-                          alt={message.file_name}
-                          className="max-w-xs rounded-md border cursor-pointer transition hover:scale-105"
-                          onClick={() => setPreviewImage(message.file_url)}
-                        />
-                      ) : (
-                        <a
-                          href={message.file_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center text-sm text-primary hover:underline"
-                        >
-                          <Paperclip className="h-4 w-4 mr-1" />
-                          {message.file_name}
-                        </a>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Partie droite : commentaires */}
+        <div className="w-full lg:w-[60%] flex-shrink-0 space-y-6 overflow-y-auto rounded-xl p-1 h-full">
+          {/* Dialog pour agrandir l'image */}
+          <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
+            <DialogContent className="flex flex-col items-center justify-center">
+              {previewImage && (
+                <img
+                  src={previewImage}
+                  alt="Aperçu"
+                  className="max-h-[80vh] max-w-full rounded-xl border"
+                />
+              )}
+            </DialogContent>
+          </Dialog>
+
+          {/* Comments */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" />
+                Commentaires ({messages.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col h-[65vh]">
+              {/* Liste des messages, scrollable */}
+              <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+                {messages.map((message) => (
+                  <div key={message.id} className="bg-white border border-border rounded-xl p-4 shadow-sm flex gap-3">
+                    {/* Avatar */}
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-700 text-lg">
+                      {message.profiles?.first_name?.[0]}
+                      {message.profiles?.last_name?.[0]}
+                    </div>
+                    {/* Message content */}
+                    <div className="flex-1">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="font-semibold text-blue-900">
+                          {message.profiles?.first_name} {message.profiles?.last_name}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(message.created_at).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="text-sm text-foreground whitespace-pre-wrap mb-2">
+                        {message.content}
+                      </div>
+                      {message.file_url && message.file_name && (
+                        <div className="mt-2">
+                          {message.file_url.match(/\.(jpeg|jpg|png|gif|webp|bmp)$/i) ? (
+                            <img
+                              src={message.file_url}
+                              alt={message.file_name}
+                              className="max-w-xs rounded-md border cursor-pointer transition hover:scale-105"
+                              onClick={() => setPreviewImage(message.file_url)}
+                            />
+                          ) : (
+                            <a
+                              href={message.file_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center text-sm text-primary hover:underline"
+                            >
+                              <Paperclip className="h-4 w-4 mr-1" />
+                              {message.file_name}
+                            </a>
+                          )}
+                        </div>
                       )}
                     </div>
+                  </div>
+                ))}
+              </div>
+              <Separator className="my-3" />
+              {/* Formulaire d'ajout, toujours visible en bas */}
+              <div className="space-y-3">
+                <Textarea
+                  placeholder="Ajouter un commentaire..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  rows={3}
+                />
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    id="file-upload"
+                    className="hidden"
+                    onChange={(e) => setFileToUpload(e.target.files?.[0] || null)}
+                  />
+                  <label htmlFor="file-upload">
+                    <Button variant="outline" size="sm" asChild>
+                      <span className="cursor-pointer">
+                        <Paperclip className="h-4 w-4 mr-2" />
+                        Joindre un fichier
+                      </span>
+                    </Button>
+                  </label>
+                  {fileToUpload && (
+                    <span className="text-sm text-muted-foreground">
+                      {fileToUpload.name}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setFileToUpload(null)}
+                        className="ml-2 h-auto p-0"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </span>
                   )}
+                  <Button 
+                    onClick={addMessage}
+                    disabled={!newMessage.trim() && !fileToUpload}
+                    size="sm"
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    Publier
+                  </Button>
                 </div>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
