@@ -69,6 +69,7 @@ export function TaskDetails({ task, onTaskUpdate }: TaskDetailsProps) {
   const [newMessage, setNewMessage] = useState('');
   const [fileToUpload, setFileToUpload] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   useEffect(() => {
     console.log('TaskDetails mounting for task:', task.id);
@@ -435,6 +436,19 @@ export function TaskDetails({ task, onTaskUpdate }: TaskDetailsProps) {
         </CardContent>
       </Card>
 
+      {/* Dialog pour agrandir l'image */}
+      <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
+        <DialogContent className="flex flex-col items-center justify-center">
+          {previewImage && (
+            <img
+              src={previewImage}
+              alt="Aperçu"
+              className="max-h-[80vh] max-w-full rounded-xl border"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Comments */}
       <Card>
         <CardHeader>
@@ -494,144 +508,53 @@ export function TaskDetails({ task, onTaskUpdate }: TaskDetailsProps) {
           <Separator />
 
           {/* Messages list */}
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {messages.map((message) => {
-              const isCurrentUser = message.sender_id === user?.id;
-              return (
-                <div key={message.id} className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} gap-3`}>
-                  {!isCurrentUser && (
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-medium text-primary text-sm">
-                      {message.profiles?.first_name?.[0]}
-                      {message.profiles?.last_name?.[0]}
-                    </div>
-                  )}
-                  
-                  <div className={`max-w-[70%] ${isCurrentUser ? 'bg-primary text-primary-foreground' : 'bg-muted'} rounded-2xl px-4 py-2`}>
-                    {!isCurrentUser && (
-                      <div className="text-xs font-medium mb-1 opacity-70">
-                        {message.profiles?.first_name} {message.profiles?.last_name}
-                      </div>
-                    )}
-                    
-                    {message.content && (
-                      <div className="text-sm whitespace-pre-wrap mb-2">
-                        {message.content}
-                      </div>
-                    )}
-                    
-                    {message.file_url && message.file_name && (
-                      <div className="mt-2">
-                        {/* Image display */}
-                        {message.file_url.match(/\.(jpeg|jpg|png|gif|webp|bmp)$/i) ? (
-                          <div className="space-y-2">
-                            <img
-                              src={message.file_url}
-                              alt={message.file_name}
-                              className="max-w-full rounded-lg border cursor-pointer"
-                              onClick={() => window.open(message.file_url, '_blank')}
-                            />
-                            <div className="flex items-center justify-between text-xs opacity-70">
-                              <span>{message.file_name}</span>
-                              <a
-                                href={message.file_url}
-                                download={message.file_name}
-                                className="hover:underline flex items-center gap-1"
-                              >
-                                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                                Télécharger
-                              </a>
-                            </div>
-                          </div>
-                        ) : 
-                        /* Video display */
-                        message.file_url.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
-                          <div className="space-y-2">
-                            <video
-                              controls
-                              className="max-w-full rounded-lg border"
-                              preload="metadata"
-                            >
-                              <source src={message.file_url} type="video/mp4" />
-                              Votre navigateur ne supporte pas la lecture vidéo.
-                            </video>
-                            <div className="flex items-center justify-between text-xs opacity-70">
-                              <span>{message.file_name}</span>
-                              <a
-                                href={message.file_url}
-                                download={message.file_name}
-                                className="hover:underline flex items-center gap-1"
-                              >
-                                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                                Télécharger
-                              </a>
-                            </div>
-                          </div>
-                        ) : 
-                        /* Other files */
-                        (
-                          <div className={`flex items-center justify-between p-3 rounded-lg border ${isCurrentUser ? 'bg-primary-foreground/10' : 'bg-background'}`}>
-                            <div className="flex items-center gap-2">
-                              <div className="p-2 rounded bg-muted">
-                                <Paperclip className="h-4 w-4" />
-                              </div>
-                              <div>
-                                <div className="text-sm font-medium">{message.file_name}</div>
-                                <div className="text-xs opacity-70">Fichier joint</div>
-                              </div>
-                            </div>
-                            <div className="flex gap-2">
-                              <a
-                                href={message.file_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="p-1 hover:bg-muted rounded text-xs"
-                                title="Ouvrir"
-                              >
-                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                </svg>
-                              </a>
-                              <a
-                                href={message.file_url}
-                                download={message.file_name}
-                                className="p-1 hover:bg-muted rounded text-xs"
-                                title="Télécharger"
-                              >
-                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                              </a>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    
-                    <div className={`text-xs mt-1 opacity-60 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
-                      {new Date(message.created_at).toLocaleString('fr-FR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </div>
+          <div className="space-y-4">
+            {messages.map((message) => (
+              <div key={message.id} className="bg-white border border-border rounded-xl p-4 shadow-sm flex gap-3">
+                {/* Avatar */}
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-700 text-lg">
+                  {message.profiles?.first_name?.[0]}
+                  {message.profiles?.last_name?.[0]}
+                </div>
+                {/* Message content */}
+                <div className="flex-1">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="font-semibold text-blue-900">
+                      {message.profiles?.first_name} {message.profiles?.last_name}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(message.created_at).toLocaleString()}
+                    </span>
                   </div>
-
-                  {isCurrentUser && (
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center font-medium text-primary-foreground text-sm">
-                      {message.profiles?.first_name?.[0]}
-                      {message.profiles?.last_name?.[0]}
+                  <div className="text-sm text-foreground whitespace-pre-wrap mb-2">
+                    {message.content}
+                  </div>
+                  {message.file_url && message.file_name && (
+                    <div className="mt-2">
+                      {message.file_url.match(/\.(jpeg|jpg|png|gif|webp|bmp)$/i) ? (
+                        <img
+                          src={message.file_url}
+                          alt={message.file_name}
+                          className="max-w-xs rounded-md border cursor-pointer transition hover:scale-105"
+                          onClick={() => setPreviewImage(message.file_url)}
+                        />
+                      ) : (
+                        <a
+                          href={message.file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center text-sm text-primary hover:underline"
+                        >
+                          <Paperclip className="h-4 w-4 mr-1" />
+                          {message.file_name}
+                        </a>
+                      )}
                     </div>
                   )}
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
-
         </CardContent>
       </Card>
     </div>
