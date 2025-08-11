@@ -138,7 +138,7 @@ export const NotificationPopover = () => {
                           <p className="text-xs text-muted-foreground mt-2">
                             {formatDistanceToNow(new Date(notification.created_at), { 
                               addSuffix: true, 
-                              locale: fr 
+                              // locale: fr 
                             })}
                           </p>
                         </div>
