@@ -12,6 +12,7 @@ import {
   X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { NotificationPopover } from '@/components/NotificationPopover';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -100,9 +101,12 @@ export default function Layout() {
                   {profile?.role === 'admin' ? 'Administrateur' : 'Développeur'}
                 </p>
               </div>
-              <Button variant="ghost" size="sm" onClick={signOut}>
-                <LogOut className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-1">
+                <NotificationPopover />
+                <Button variant="ghost" size="sm" onClick={signOut}>
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -118,6 +122,7 @@ export default function Layout() {
           <div className="flex flex-1 items-center justify-between">
             <h1 className="text-lg font-semibold">ProManagement</h1>
             <div className="flex items-center gap-x-2">
+              <NotificationPopover />
               <span className="text-sm text-muted-foreground">
                 {profile?.first_name} {profile?.last_name}
               </span>
