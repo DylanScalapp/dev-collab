@@ -463,52 +463,91 @@ export function TaskDetails({ task, onTaskUpdate }: TaskDetailsProps) {
             </CardHeader>
             <CardContent className="flex flex-col h-[65vh]">
               {/* Liste des messages, scrollable */}
-              <div className="flex-1 overflow-y-auto space-y-4 pr-1">
-                {messages.map((message) => (
-                  <div key={message.id} className="bg-white border border-border rounded-xl p-4 shadow-sm flex gap-3">
-                    {/* Avatar */}
-                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-700 text-lg">
-                      {message.profiles?.first_name?.[0]}
-                      {message.profiles?.last_name?.[0]}
-                    </div>
-                    {/* Message content */}
-                    <div className="flex-1">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="font-semibold text-blue-900">
-                          {message.profiles?.first_name} {message.profiles?.last_name}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(message.created_at).toLocaleString()}
-                        </span>
+              <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+                {messages.map((message) => {
+                  const isCurrentUser = message.sender_id === user?.id;
+                  const initials = `${message.profiles?.first_name?.[0] || ''}${message.profiles?.last_name?.[0] || ''}`;
+                  
+                  return (
+                    <div key={message.id} className={`flex gap-3 ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'}`}>
+                      {/* Avatar */}
+                      <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-semibold text-xs ${
+                        isCurrentUser 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'bg-secondary text-secondary-foreground'
+                      }`}>
+                        {initials}
                       </div>
-                      <div className="text-sm text-foreground whitespace-pre-wrap mb-2">
-                        {message.content}
-                      </div>
-                      {message.file_url && message.file_name && (
-                        <div className="mt-2">
-                          {message.file_url.match(/\.(jpeg|jpg|png|gif|webp|bmp)$/i) ? (
-                            <img
-                              src={message.file_url}
-                              alt={message.file_name}
-                              className="max-w-xs rounded-md border cursor-pointer transition hover:scale-105"
-                              onClick={() => setPreviewImage(message.file_url)}
-                            />
-                          ) : (
-                            <a
-                              href={message.file_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center text-sm text-primary hover:underline"
-                            >
-                              <Paperclip className="h-4 w-4 mr-1" />
-                              {message.file_name}
-                            </a>
+                      
+                      {/* Message bubble */}
+                      <div className={`max-w-[70%] ${isCurrentUser ? 'items-end' : 'items-start'} flex flex-col`}>
+                        <div className={`rounded-2xl px-4 py-2 ${
+                          isCurrentUser 
+                            ? 'bg-primary text-primary-foreground rounded-br-md' 
+                            : 'bg-secondary text-secondary-foreground rounded-bl-md'
+                        }`}>
+                          {/* Nom et heure */}
+                          <div className={`flex items-center gap-2 mb-1 ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'}`}>
+                            <span className="text-xs font-medium opacity-90">
+                              {message.profiles?.first_name} {message.profiles?.last_name}
+                            </span>
+                            <span className="text-xs opacity-70">
+                              {new Date(message.created_at).toLocaleTimeString('fr-FR', { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </span>
+                          </div>
+                          
+                          {/* Contenu du message */}
+                          {message.content && (
+                            <div className="text-sm whitespace-pre-wrap">
+                              {message.content}
+                            </div>
+                          )}
+                          
+                          {/* Fichier joint */}
+                          {message.file_url && message.file_name && (
+                            <div className="mt-2">
+                              {message.file_url.match(/\.(jpeg|jpg|png|gif|webp|bmp)$/i) ? (
+                                <img
+                                  src={message.file_url}
+                                  alt={message.file_name}
+                                  className="max-w-full rounded-lg cursor-pointer transition hover:opacity-90 shadow-sm"
+                                  onClick={() => setPreviewImage(message.file_url)}
+                                />
+                              ) : message.file_url.match(/\.(mp4|webm|ogg|mov|avi)$/i) ? (
+                                <video
+                                  src={message.file_url}
+                                  controls
+                                  className="max-w-full rounded-lg shadow-sm"
+                                />
+                              ) : (
+                                <div className={`flex items-center gap-2 p-3 rounded-lg mt-2 ${
+                                  isCurrentUser 
+                                    ? 'bg-primary-foreground/10' 
+                                    : 'bg-primary/10'
+                                }`}>
+                                  <Paperclip className="h-4 w-4 opacity-70" />
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium truncate">{message.file_name}</p>
+                                    <a
+                                      href={message.file_url}
+                                      download={message.file_name}
+                                      className="text-xs opacity-80 hover:opacity-100 underline"
+                                    >
+                                      Télécharger
+                                    </a>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           )}
                         </div>
-                      )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               <Separator className="my-3" />
               {/* Formulaire d'ajout, toujours visible en bas */}
