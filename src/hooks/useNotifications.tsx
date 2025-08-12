@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from '@/hooks/use-toast';
+import { playNotificationSound } from '@/utils/notificationManager';
 
 export interface Notification {
   id: string;
@@ -22,30 +23,6 @@ export const useNotifications = () => {
   const [loading, setLoading] = useState(false);
   const { profile } = useAuth();
 
-  // Son de notification
-  const playNotificationSound = useCallback(() => {
-    try {
-      // Créer un son simple avec Web Audio API
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      oscillator.frequency.value = 800;
-      oscillator.type = 'sine';
-      
-      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-      gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 0.01);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-      
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.3);
-    } catch (error) {
-      console.warn('Could not play notification sound:', error);
-    }
-  }, []);
 
   // Charger les notifications
   const fetchNotifications = useCallback(async () => {

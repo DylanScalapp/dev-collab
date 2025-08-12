@@ -17,6 +17,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { createTaskAssignmentNotifications } from '@/utils/notificationManager';
 
 const taskSchema = z.object({
   title: z.string().min(1, 'Le titre est requis').max(100, 'Le titre ne peut pas dépasser 100 caractères'),
@@ -160,6 +161,15 @@ export function TaskForm({ task, onSubmit, onCancel }: TaskFormProps) {
     setLoading(true);
     try {
       if (task) {
+        // Get current assignments to detect new ones
+        const { data: currentAssignments } = await supabase
+          .from('task_assignments')
+          .select('user_id')
+          .eq('task_id', task.id);
+        
+        const currentUserIds = currentAssignments?.map(a => a.user_id) || [];
+        const newUserIds = data.assigned_users.filter(userId => !currentUserIds.includes(userId));
+
         // Update existing task
         const { error: taskError } = await supabase
           .from('tasks')
@@ -194,6 +204,11 @@ export function TaskForm({ task, onSubmit, onCancel }: TaskFormProps) {
             .insert(assignments);
 
           if (assignError) throw assignError;
+
+          // Create notifications for newly assigned users
+          if (newUserIds.length > 0) {
+            await createTaskAssignmentNotifications(task.id, data.title, newUserIds);
+          }
         }
 
         toast({
@@ -233,6 +248,9 @@ export function TaskForm({ task, onSubmit, onCancel }: TaskFormProps) {
             .insert(assignments);
 
           if (assignError) throw assignError;
+
+          // Create notifications for assigned users
+          await createTaskAssignmentNotifications(newTask.id, data.title, data.assigned_users);
         }
 
         toast({
