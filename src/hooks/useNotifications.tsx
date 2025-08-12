@@ -26,8 +26,12 @@ export const useNotifications = () => {
 
   // Charger les notifications
   const fetchNotifications = useCallback(async () => {
-    if (!profile?.user_id) return;
+    if (!profile?.user_id) {
+      console.log('No user profile or user_id available');
+      return;
+    }
     
+    console.log('Fetching notifications for user:', profile.user_id);
     setLoading(true);
     try {
       const { data, error } = await (supabase as any)
@@ -37,8 +41,12 @@ export const useNotifications = () => {
         .order('created_at', { ascending: false })
         .limit(50);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error fetching notifications:', error);
+        throw error;
+      }
 
+      console.log('Notifications fetched:', data);
       setNotifications(data || []);
       setUnreadCount(data?.filter((n: Notification) => !n.read).length || 0);
     } catch (error) {
